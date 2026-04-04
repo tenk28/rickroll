@@ -13,6 +13,10 @@ cleanup() {
     exit
 }
 
+now_us() {
+    echo "${EPOCHREALTIME//[.,]/}"
+}
+
 trap cleanup INT TERM
 
 curl -sL "$AUDIO_URL" | aplay -q - &
@@ -22,21 +26,21 @@ printf '\033[?25l'   # hide cursor
 printf '\033[2J'     # clear screen
 
 frame=""
-frame_start="${EPOCHREALTIME/./}"   # microseconds as integer, no subprocess
+frame_start=$(now_us)   # microseconds as integer, no subprocess
 while IFS= read -r line; do
     if [[ "$line" == "---FRAME---" ]]; then
         printf '\033[H'
         printf '%s' "$frame"
         frame=""
 
-        now="${EPOCHREALTIME/./}"
+        now=$(now_us)
         elapsed=$(( now - frame_start ))
         remaining=$(( FRAME_US - elapsed ))
         if (( remaining > 0 )); then
             sleep "${remaining}e-6"   # sleep accepts scientific notation
         fi
 
-        frame_start="${EPOCHREALTIME/./}"
+        frame_start=$(now_us)
     else
         frame+="$line"$'\n'
     fi
